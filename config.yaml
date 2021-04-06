@@ -1,0 +1,5 @@
+requester:
+  request_from: gabriel.rosser@gmail.com
+  user_agent: moveright_agent_55
+  limit_per_second: 3
+  limit_per_hour: 300
