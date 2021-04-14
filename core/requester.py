@@ -68,8 +68,9 @@ class Limiter(object):
                 if k in self.last_check_time:
                     if self.calls_per.get(k, 0) >= lim:
                         wait_for = increment_time_unit(self.last_check_time[k], unit=k)
-                        self.logger.info("Exceeded per second limit. Sleeping for %.2f seconds...", wait_for)
-                        time.sleep(wait_for)
+                        if wait_for > 0:
+                            self.logger.info("Exceeded per second limit. Sleeping for %.2f seconds...", wait_for)
+                            time.sleep(wait_for)
                         # reset the counter
                         self.calls_per[k] = 0
                 self.last_check_time[k] = datetime.now()

@@ -1,5 +1,16 @@
+# all values here are defaults
+# if a file private_config.yaml is present, this overrides any values here
+# do NOT commit this private file!
+env:
+  timezone: Europe/London
 requester:
-  request_from: gabriel.rosser@gmail.com
-  user_agent: moveright_agent_55
-  limit_per_second: 3
-  limit_per_hour: 300
+  request_from: <email>
+  user_agent: <user_agent>
+  limit_per_second: 6
+  limit_per_hour: 10000
+mongodb:
+  host: localhost
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"

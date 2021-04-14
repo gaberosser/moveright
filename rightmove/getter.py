@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from rightmove import parser, consts
 from core import get_logger
+from time import sleep
 
 logger = get_logger("rightmove_getter")
 
@@ -80,17 +81,26 @@ def outcode_search_payload(outcode_int, index=None, per_page=48, include_sstc=Tr
     return payload
 
 
-def _run_outcode_search(outcode_int, find_url, requester, payload):
+def _run_outcode_search(outcode_int, find_url, requester, payload, retries=3, sec_between_retry=10):
+    try_count = 1
     resp = requester.get(find_url, params=payload)
-    if resp.status_code != 200:
-        raise AttributeError("Failed to get links for outcode %d at URL %s. Error: %s" % (
-            outcode_int, find_url, resp.content
-        ))
-
-    soup = BeautifulSoup(resp.content, "html.parser")
-    dat = parser.parse_search_results(soup)
-    nres = int(dat['pagination']['last'].strip().replace(',', ''))
-    return soup, nres
+    while try_count <= retries:
+        try:
+            resp.raise_for_status()
+        except Exception:
+            logger.error(
+                "Failed to get data for outcode %d at URL %s on try %d. Error: %s",
+                outcode_int, find_url, try_count, resp.content
+            )
+            try_count += 1
+            sleep(sec_between_retry)
+            continue
+        else:
+            soup = BeautifulSoup(resp.content, "html.parser")
+            dat = parser.parse_search_results(soup)
+            nres = int(dat['pagination']['last'].strip().replace(',', ''))
+            return soup, nres
+    raise requests.exceptions.RequestException("Failed to get data for outcode %d" % outcode_int)
 
 
 def outcode_search_generator(outcode_int, find_url, requester=None, per_page=48):

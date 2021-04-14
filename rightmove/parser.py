@@ -50,13 +50,12 @@ rent_bills_incl = re.compile(r"(?<!part )bills inclu[^ ]* +(?!for)", flags=re.I)
 
 def parse_search_results(soup):
     el = soup.find('script', text=re.compile(r'window\.jsonModel = '))
-    dat = json.loads(re.sub(r'^[^ ]* = ', '', el.text))
+    dat = json.loads(re.sub(r'^[^ ]* = ', '', el.contents[0]))
     return dat
 
 
 def property_array_from_search(soup):
-    el = soup.find('script', text=re.compile(r'window\.jsonModel = '))
-    dat = json.loads(re.sub(r'^[^ ]* = ', '', el.text))
+    dat = parse_search_results(soup)
     return dat['properties']
 
 

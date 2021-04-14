@@ -67,22 +67,14 @@ PROPERTY_TYPE_OVERSEAS = 4
 PROPERTY_TYPE_COMMERCIALFORSALE = 5
 PROPERTY_TYPE_COMMERCIALTORENT = 6
 
-PROPERTY_TYPE_CHOICES = (
-    (PROPERTY_TYPE_FORSALE, "residential property for sale"),
-    (PROPERTY_TYPE_TORENT, "residential property to rent"),
-    (PROPERTY_TYPE_NEWBUILD, "residential new build property for sale"),
-    (PROPERTY_TYPE_OVERSEAS, "overseas property for sale"),
-    (PROPERTY_TYPE_COMMERCIALFORSALE, "commercial property for sale"),
-    (PROPERTY_TYPE_COMMERCIALTORENT, "commercial property to rent"),
-)
 
 PROPERTY_TYPE_MAP = {
-    'property-for-sale': PROPERTY_TYPE_FORSALE,
-    'property-to-rent': PROPERTY_TYPE_TORENT,
-    'overseas-property': PROPERTY_TYPE_OVERSEAS,
-    'new-homes-for-sale': PROPERTY_TYPE_NEWBUILD,
-    'commercial-property-to-let': PROPERTY_TYPE_COMMERCIALTORENT,
-    'commercial-property-for-sale': PROPERTY_TYPE_COMMERCIALFORSALE,
+    PROPERTY_TYPE_FORSALE: 'residential-for-sale',
+    PROPERTY_TYPE_TORENT: 'residential-to-rent',
+    PROPERTY_TYPE_OVERSEAS: 'overseas',
+    PROPERTY_TYPE_NEWBUILD: 'residential-new-build-for-sale',
+    PROPERTY_TYPE_COMMERCIALTORENT: 'commercial-to-let',
+    PROPERTY_TYPE_COMMERCIALFORSALE: 'commercial-for-sale',
 }
 
 STATION_TYPE_NATIONAL_RAIL = 1
