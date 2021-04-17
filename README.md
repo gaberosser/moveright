@@ -31,4 +31,7 @@ pipenv install
 ```
 - Add worker job to crontab:
 ```
+crontab -e
+# add the following line:
+0 1 * * * cd ~/moveright && PYTHONPATH=. pipenv run python bin/get_rightmove_property_for_sale.py
 ```
