@@ -41,23 +41,28 @@ def add_retrieval_meta(attr, **kwargs):
     attr["__retrieval_meta"].update(to_add)
 
 
-def get_one_outcode(outcode, property_type):
+def get_one_outcode(outcode, property_type, **retrieval_meta_kwargs):
     """
     Get the raw attributes for one outcode and store in MongoDB
     :param outcode:
     :param property_type:
+    :param retrieval_meta_kwargs: Any kwargs will be passed into the retrieval metadata
     :return: None
     """
     db_name = consts.PROPERTY_TYPE_MAP[property_type]
     coll = mongo_connection()[db_name]
     find_url = consts.FIND_URLS[property_type]
     oids = []
-    ## TODO: log errors in outcode_search_generator and move on
     for i, soup in enumerate(getter.outcode_search_generator(outcode, find_url, requester=REQUESTER)):
-        attr_arr = parser.property_array_from_search(soup)
+        try:
+            attr_arr = parser.property_array_from_search(soup)
+        except Exception:
+            LOGGER.exception("Failed to parse property array from page %d of results of outcode %d.",
+                             i + 1, outcode)
+            raise
         if len(attr_arr) > 0:
             for attr in attr_arr:
-                add_retrieval_meta(attr, outcode=outcode, property_type=property_type)
+                add_retrieval_meta(attr, outcode=outcode, property_type=property_type, **retrieval_meta_kwargs)
             resp = coll.insert_many(attr_arr)
             oids.extend(resp.inserted_ids)
     return oids
@@ -73,4 +78,7 @@ def get_all_outcodes(property_type):
         LOGGER.info("Getting %s for outcode %d.",
                     consts.PROPERTY_TYPE_MAP[property_type],
                     outcode)
-        oids[outcode] = get_one_outcode(outcode, property_type)
+        try:
+            oids[outcode] = get_one_outcode(outcode, property_type, outcode_postcode=pc)
+        except Exception:
+            LOGGER.exception("Failed to retrieve results for outcode %d.", outcode)

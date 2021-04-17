@@ -108,22 +108,31 @@ def outcode_search_generator(outcode_int, find_url, requester=None, per_page=48)
     :param index: If supplied, this is the pagination parameter. This allows recursive calling.
     """
     if requester is None:
+        logger.info("No requester specified, so we will run without request limits.")
         requester = requests
     payload = outcode_search_payload(outcode_int, per_page=per_page)
-    soup, nres = _run_outcode_search(outcode_int, find_url, requester, payload)
+    try:
+        soup, nres = _run_outcode_search(outcode_int, find_url, requester, payload)
+        indexes = range(per_page, nres + 1, per_page)  # add one to include final page
+        yield soup
+    except Exception:
+        logger.exception("Failed to get initial results for outcode %d.", outcode_int)
+        raise
 
-    indexes = range(per_page, nres + 1, per_page)  # add one to include final page
-    yield soup
     for i in indexes:
         payload = outcode_search_payload(outcode_int, per_page=per_page, index=i)
         try:
             soup, nres = _run_outcode_search(outcode_int, find_url, requester, payload)
             yield soup
         except Exception:
-            logger.exception("Failed to get page of results with index %d", i)
+            logger.exception("Failed to get page of results for outcode %d with index %d", outcode_int, i)
 
 
 def search_one_outcode(outcode, property_type, requester=None):
     find_url = consts.FIND_URLS[property_type]
     for i, soup in enumerate(outcode_search_generator(outcode, find_url, requester=requester)):
-        yield parser.parse_from_soup(soup, property_type=property_type)
+        try:
+            yield parser.parse_from_soup(soup, property_type=property_type)
+        except Exception:
+            logger.exception("Failed to parse page %d of results for outcode %d.", i, outcode)
+            raise
