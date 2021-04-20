@@ -4,6 +4,8 @@ import pymongo
 from config import cfg
 import pytz
 from datetime import datetime
+import time
+import collections
 
 LOGGER = get_logger("rightmove_worker")
 REQUESTER = requester.MoverightRequester()
@@ -67,12 +69,13 @@ def get_one_outcode(outcode, property_type, **retrieval_meta_kwargs):
             oids.extend(resp.inserted_ids)
     return oids
 
-def get_all_outcodes(property_type):
+def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
     """
     Iterate over all outcodes and store the results in MongoDB
     :param property_type:
     :return:
     """
+    try_count = collections.Counter()
     oids = {}
     for outcode, pc in consts.OUTCODE_MAP.items():
         LOGGER.info("Getting %s for outcode %d.",
@@ -82,3 +85,22 @@ def get_all_outcodes(property_type):
             oids[outcode] = get_one_outcode(outcode, property_type, outcode_postcode=pc)
         except Exception:
             LOGGER.exception("Failed to retrieve results for outcode %d.", outcode)
+            # store this outcode for possible retrying later
+            try_count[outcode] += 1
+
+    if retries > 1:
+        while len(try_count) > 0:
+            for outcode, i in list(try_count.items()):
+                try_count[outcode] += 1
+                try:
+                    pc = consts.OUTCODE_MAP[outcode]
+                    oids[outcode] = get_one_outcode(outcode, property_type, outcode_postcode=pc)
+                    try_count.pop(outcode)
+                    LOGGER.info("Succeeded in getting outcode %d on try %d.", outcode, i)
+                except Exception:
+                    LOGGER.exception("Failed to retrieve results for outcode %d on try %d.", outcode, try_count[outcode])
+                    if i == retries:
+                        LOGGER.error("Will give up on outcode %d.", outcode)
+                        try_count.pop(outcode)
+                        continue
+                    time.sleep(sec_between_retry)

@@ -81,7 +81,7 @@ def outcode_search_payload(outcode_int, index=None, per_page=48, include_sstc=Tr
     return payload
 
 
-def _run_outcode_search(outcode_int, find_url, requester, payload, retries=3, sec_between_retry=10):
+def _run_outcode_search(outcode_int, find_url, requester, payload, retries=1, sec_between_retry=10):
     try_count = 1
     resp = requester.get(find_url, params=payload)
     while try_count <= retries:
