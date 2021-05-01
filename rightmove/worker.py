@@ -1,4 +1,4 @@
-from core import requester, get_logger
+from core import requester, register, get_logger
 from rightmove import getter, consts, parser
 import pymongo
 from config import cfg
@@ -9,6 +9,7 @@ import collections
 
 LOGGER = get_logger("rightmove_worker")
 REQUESTER = requester.MoverightRequester()
+ACCESS_LOG = register.AccessLog()
 TIMEZONE = cfg["env"].get("timezone", "utc")
 VERSION = cfg["env"]["version"]
 MONGO_CLI = None
@@ -19,6 +20,7 @@ def mongo_connection():
     if MONGO_CLI is None:
         MONGO_CLI = pymongo.MongoClient(**cfg["mongodb"])
     return MONGO_CLI["rightmove"]
+
 
 def add_retrieval_meta(attr, **kwargs):
     """
@@ -69,12 +71,14 @@ def get_one_outcode(outcode, property_type, **retrieval_meta_kwargs):
             oids.extend(resp.inserted_ids)
     return oids
 
+
 def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
     """
     Iterate over all outcodes and store the results in MongoDB
     :param property_type:
     :return:
     """
+    property_type_str = consts.PROPERTY_TYPE_MAP[property_type]
     try_count = collections.Counter()
     oids = {}
     for outcode, pc in consts.OUTCODE_MAP.items():
@@ -83,6 +87,14 @@ def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
                     outcode)
         try:
             oids[outcode] = get_one_outcode(outcode, property_type, outcode_postcode=pc)
+            n = len(oids[outcode])
+            ACCESS_LOG.log(
+                "rightmove",
+                outcode=outcode,
+                success=1,
+                num_retries=0,
+                result=f"Retrieved {n} entries of type {property_type_str}."
+            )
         except Exception:
             LOGGER.exception("Failed to retrieve results for outcode %d.", outcode)
             # store this outcode for possible retrying later
@@ -95,12 +107,26 @@ def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
                 try:
                     pc = consts.OUTCODE_MAP[outcode]
                     oids[outcode] = get_one_outcode(outcode, property_type, outcode_postcode=pc)
-                    try_count.pop(outcode)
+                    n = len(oids[outcode])
+                    n_retry = try_count.pop(outcode) - 1
                     LOGGER.info("Succeeded in getting outcode %d on try %d.", outcode, i)
+                    ACCESS_LOG.log(
+                        "rightmove",
+                        outcode=outcode,
+                        success=1,
+                        num_retries=n_retry,
+                        result=f"Retrieved {n} entries of type {property_type_str}."
+                    )
                 except Exception:
                     LOGGER.exception("Failed to retrieve results for outcode %d on try %d.", outcode, try_count[outcode])
                     if i == retries:
                         LOGGER.error("Will give up on outcode %d.", outcode)
-                        try_count.pop(outcode)
+                        n_retry = try_count.pop(outcode) - 1
+                        ACCESS_LOG.log(
+                            "rightmove",
+                            outcode=outcode,
+                            success=0,
+                            num_retries=n_retry
+                        )
                         continue
                     time.sleep(sec_between_retry)
