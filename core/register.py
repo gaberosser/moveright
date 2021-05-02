@@ -14,6 +14,7 @@ class AccessLog(object):
     _schema = collections.OrderedDict([
         ("dt", "TIMESTAMP NOT NULL"),
         ("outcode", "INTEGER NOT NULL"),
+        ("property_type", "INTEGER NOT NULL"),
         ("result", "TEXT"),
         ("success", "INTEGER NOT NULL CHECK( success IN (0, 1) )"),
         ("num_retries", "INTEGER")

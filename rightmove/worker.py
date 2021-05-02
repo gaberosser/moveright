@@ -91,6 +91,7 @@ def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
             ACCESS_LOG.log(
                 "rightmove",
                 outcode=outcode,
+                property_type=property_type,
                 success=1,
                 num_retries=0,
                 result=f"Retrieved {n} entries of type {property_type_str}."
@@ -113,6 +114,7 @@ def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
                     ACCESS_LOG.log(
                         "rightmove",
                         outcode=outcode,
+                        property_type=property_type,
                         success=1,
                         num_retries=n_retry,
                         result=f"Retrieved {n} entries of type {property_type_str}."
@@ -125,6 +127,7 @@ def get_all_outcodes(property_type, retries=3, sec_between_retry=10):
                         ACCESS_LOG.log(
                             "rightmove",
                             outcode=outcode,
+                            property_type=property_type,
                             success=0,
                             num_retries=n_retry
                         )
